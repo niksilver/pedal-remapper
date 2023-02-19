@@ -3,7 +3,6 @@
 A mod for the monome norns which translates a MIDI pedal input into
 and other MIDI pedal input.
 
-
 ## References
 
 - [Mods documentation (in progress)](https://monome.org/docs/norns/community-scripts/#mods)
