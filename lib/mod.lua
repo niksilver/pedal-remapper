@@ -3,10 +3,11 @@
 
 local mod = require 'core/mods'
 local json = include (mod.this_name .. '/lib/json')
+local Midi = require 'core/midi'
 
 --- Our local state
 --
-local pedal = {
+local state = {
   original_norns_midi_event = nil
 }
 
@@ -19,13 +20,12 @@ mod.hook.register("system_post_startup", "Pedal remapper post", function()
     -- We've found the function we want to wrap,
     -- but let's not replace it twice.
 
-    if pedal.original_norns_midi_event == nil then
-      pedal.original_norns_midi_event = _norns.midi.event
+    if state.original_norns_midi_event == nil then
+      state.original_norns_midi_event = _norns.midi.event
       _norns.midi.event = mod_norns_midi_event
-      print("Replaced original " .. tostring(pedal.original_norns_midi_event) .. " with " .. tostring(_norns.midi.event))
     end
   else
-    print("No _norns.midi.event")
+    print("No _norns.midi.event, no pedal remapping")
   end
 
 end)
@@ -35,9 +35,9 @@ end)
 -- function if we're not in the mod menu.
 --
 function mod_norns_midi_event(id, data)
-  local str = json.encode(data)
+  local str = json.encode(Midi.to_msg(data))
   print(str)
-  pedal.original_norns_midi_event(id, data)
+  state.original_norns_midi_event(id, data)
 end
 
 --
