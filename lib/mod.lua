@@ -8,7 +8,11 @@ local Midi = require 'core/midi'
 --- Our local state
 --
 local state = {
-  original_norns_midi_event = nil
+  original_norns_midi_event = nil,    -- Original function we'll wrap
+  cc = 64,    -- The MIDI CC of the pedal
+  channel = 1,    -- The MIDI channel of the pedal
+  threshold = 100,    -- What the pedal needs to reach to register "pressed".
+  is_pressed = false,    -- If the pedal is pressed
 }
 
 -- After startup we want to wrap the norns' MIDI event function that
@@ -31,14 +35,49 @@ mod.hook.register("system_post_startup", "Pedal remapper post", function()
 end)
 
 -- Our own version of _norns.midi.event.
--- We make a possible translation, and pass this into the original
--- function if we're not in the mod menu.
+-- We make a possible translation, and pass this into the original function.
 --
 function mod_norns_midi_event(id, data)
-  local str = json.encode(Midi.to_msg(data))
+  local msg = Midi.to_msg(data)
+  local str = json.encode(msg)
   print(str)
+
+  if msg.cc == state.cc and msg.ch == state.channel then
+    -- This is from our pedal.
+    -- We should only send a message if we've flipped from
+    -- not-pressed to pressed.
+
+    if is_pressed(msg.val) ~= state.is_pressed then
+      -- The pressed state has changed
+      state.is_pressed = not state.is_pressed
+
+      -- Maybe send a trigger message, otherwise just swallow it
+      if state.is_pressed then
+        msg.val = 127
+        print("    Changed msg to " .. json.encode(msg))
+        data = Midi.to_data(msg)
+      else
+        -- The pedal is not pressed, so swallow the message
+        print("    Swallowing message (pedal no longer pressed)")
+        return
+      end
+    else
+      -- The pressed state is the same, so swallow the message
+      print("    Swallowing message (pedal state unchanged)")
+      return
+    end
+  end
+
   state.original_norns_midi_event(id, data)
 end
+
+-- Is this a "pressed" value - ie at or above our threshold?
+--
+function is_pressed(v)
+  return v >= state.threshold
+end
+
+-- Create a toggle pedal
 
 --
 -- [optional] menu: extending the menu system is done by creating a table with
