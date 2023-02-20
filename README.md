@@ -1,7 +1,7 @@
 # Pedal remapper
 
 A mod for the monome norns which translates a MIDI pedal input into
-and other MIDI pedal input.
+and other MIDI pedal input. Currently, it just sends a momentary value.
 
 ## References
 
